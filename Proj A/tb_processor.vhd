@@ -1,0 +1,453 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+-- This is an empty entity so we don't need to declare ports
+entity tb_processor is
+generic(gCLK_HPER   : time := 50 ns;
+	N : integer := 32);
+end tb_processor;
+
+architecture structure of tb_processor is
+constant cCLK_PER  : time := gCLK_HPER * 2;
+-- Declare the component we are going to instantiate
+component processor
+  port(i_CLK        : in std_logic;     -- Clock input
+       i_Res        : in std_logic;	-- Reset input
+       i_WrEn       : in std_logic;     -- Global write enable
+       i_WrEnMem    : in std_logic; --Memory write enable
+       i_MuxSel     : in std_logic; --Mux Selecter
+       i_WeReg      : in std_logic_vector(4 downto 0);-- Write address input
+       i_Re1        : in std_logic_vector(4 downto 0);--Read Address input
+       i_Re2        : in std_logic_vector(4 downto 0);--Read Address input
+       i_Im         : in std_logic_vector(15 downto 0);--Immediate input
+       i_Add_Sub    : in std_logic;
+       i_ALUSRc	    : in std_logic;
+       i_SelSign    : in std_logic;
+       i_Op	    : in std_logic_vector(5 downto 0);
+       i_Shift	    : in std_logic_vector(4 downto 0));	
+end component;
+
+signal s_We,s_Re1,s_Re2, s_Shift : std_logic_vector(4 downto 0);
+signal s_Im : std_logic_vector(15 downto 0);
+signal s_CLK, s_Res, s_WrEn,s_WrMem, s_Add_Sub, s_ALUSrc, s_MuxSel, s_SelSign: std_logic;
+signal s_Op : std_logic_vector(5 downto 0);
+
+
+begin
+
+DUT: processor
+  port map(i_CLK => s_CLK,
+	   i_Res => s_Res,
+	   i_WrEn => s_WrEn,
+	   i_WrEnMem => s_WrMem,
+	   i_MuxSel => s_MuxSel,
+	   i_WeReg => s_We,
+	   i_Re1 => s_Re1,
+	   i_Re2 => s_Re2,
+	   i_Im => s_Im,
+	   i_Add_Sub => s_Add_Sub,
+	   i_ALUSRc => s_ALUSrc,
+	   i_Op => s_Op,
+	   i_Shift => s_Shift,
+	   i_SelSign => s_SelSign);
+
+P_CLK: process
+  begin
+    s_CLK <= '0';
+    wait for gCLK_HPER;
+    s_CLK <= '1';
+    wait for gCLK_HPER;
+end process;
+  
+P_TB: process
+  begin
+	
+	s_Res <= '1';
+        s_WrMem <= '0';
+	s_WrEn <= '0';
+	s_SelSign <= '0';
+    wait for cCLK_PER;
+	   -- load value into register 1
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00001";
+	   s_Re1 <= "00000";
+	   s_Re2 <= "00000";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='1';
+    wait for cCLK_PER;   
+	   -- load value into register 2
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00010";
+	   s_Re1 <= "00000";
+	   s_Re2 <= "00001";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='1';
+    wait for cCLK_PER; 
+	   --Load overflow into register 3
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00011";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='0';
+    wait for cCLK_PER; 
+
+	   -- Load value into register 1
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00001";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00001";
+	   s_Im <="0000000000000111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+
+	 -- store value into register 2
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00010";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00001";
+	   s_Im <="0000000000111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+
+	-- 1+2 in register 4
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00100";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+	   
+            --Load into register 1
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00001";
+	   s_Re1 <= "00000";
+	   s_Re2 <= "00000";
+	   s_Im <="1111111000000011";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='1';
+    wait for cCLK_PER;
+  		
+	    --load into register 2
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00010";
+	   s_Re1 <= "00000";
+	   s_Re2 <= "00000";
+	   s_Im <="1111100000111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='1';
+    wait for cCLK_PER;
+
+           --1 + 2 in 5
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00101";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='1';
+	   s_ALUSRc <='0';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+           --load into register 1
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00001";
+	   s_Re1 <= "00000";
+	   s_Re2 <= "00010";
+	   s_Im <="0000000000000001";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="00000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+           --shift into register 1
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00001";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="0000000000000001";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "100000";
+	   s_Shift <="11111";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+           --loads into 2
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00010";
+	   s_Re1 <= "00000";
+	   s_Re2 <= "00010";
+	   s_Im <="0111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="11111";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+           --shift into register 2
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00010";
+	   s_Re1 <= "00010";
+	   s_Re2 <= "00010";
+	   s_Im <="0111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "100000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+           --add into register 2
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00010";
+	   s_Re1 <= "00010";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+          --add into register 6
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00110";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "000000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+          --add into register 7
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00111";
+	   s_Re1 <= "00010";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "000000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+           --shift right logical
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="01000";
+	   s_Re1 <= "00010";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "101000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+           --shift right arithmetic
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="01001";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111111111111111";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='0';
+	   s_Op <= "110000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+	    --set register 1
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00001";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1010101010011001";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+	    --set register 2
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="00001";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111001010110101";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000000";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+	    --set register 
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="01010";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111001010110101";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000001";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+	    --set register 
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="01011";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111001010110101";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000010";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+    wait for cCLK_PER;
+	    --set register 
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="01100";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111001010110101";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000011";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+	    --set register 
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="01101";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111001010110101";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000100";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+	    --doing something
+	   s_Res <= '0';
+	   s_WrEn <= '1';
+	   s_WrMem <= '0';
+	   s_MuxSel <='0';
+	   s_We <="01110";
+	   s_Re1 <= "00001";
+	   s_Re2 <= "00010";
+	   s_Im <="1111001010110101";
+	   s_Add_Sub <='0';
+	   s_ALUSRc <='1';
+	   s_Op <= "000101";
+	   s_Shift <="10000";
+	   s_SelSign <='0';
+    wait for cCLK_PER;
+  end process;
+end structure;

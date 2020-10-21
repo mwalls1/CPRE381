@@ -1,0 +1,51 @@
+m255
+K4
+z2
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dU:/Cpre381/Proj B/work
+Econtrolmodule
+Z1 w1571957804
+Z2 DPx4 ieee 11 numeric_std 0 22 aU^R8eGcicLcUFIaBQSL>3
+Z3 DPx3 std 6 textio 0 22 zE1`LPoLg^DX3Oz^4Fj1K3
+Z4 DPx4 ieee 14 std_logic_1164 0 22 cVAk:aDinOX8^VGI1ekP<3
+R0
+Z5 8U:/Cpre381/Proj B/controlModule.vhd
+Z6 FU:/Cpre381/Proj B/controlModule.vhd
+l0
+L4
+VVZYZVdOlYmB]@WRfUW9P71
+!s100 H88=?1Jj2hBRecTDo0JkQ0
+Z7 OP;C;10.7b;67
+32
+Z8 !s110 1571957806
+!i10b 1
+Z9 !s108 1571957806.000000
+Z10 !s90 -reportprogress|300|-work|work|U:/Cpre381/Proj B/controlModule.vhd|
+!s107 U:/Cpre381/Proj B/controlModule.vhd|
+!i113 1
+Z11 o-work work
+Z12 tExplicit 1 CvgOpt 0
+Adataflow
+R2
+R3
+R4
+DEx4 work 13 controlmodule 0 22 VZYZVdOlYmB]@WRfUW9P71
+l20
+L19
+V3hC5gBn>F]aPLMNa87c=B3
+!s100 co9[z=YjVSdi2XXIh>IR_0
+R7
+32
+R8
+!i10b 1
+R9
+R10
+Z13 !s107 U:/Cpre381/Proj B/controlModule.vhd|
+!i113 1
+R11
+R12

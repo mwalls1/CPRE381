@@ -1,0 +1,39 @@
+-------------------------------------------------------------------------
+-- Joseph Zambreno
+-- Department of Electrical and Computer Engineering
+-- Iowa State University
+-------------------------------------------------------------------------
+
+
+-- dff.vhd
+-------------------------------------------------------------------------
+-- DESCRIPTION: This file contains an implementation of an edge-triggered
+-- flip-flop with parallel access and reset.
+--
+--
+-- NOTES:
+-- 8/19/16 by JAZ::Design created.
+-------------------------------------------------------------------------
+
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity Compare is
+  port(i_A : in std_logic_vector(31 downto 0);
+       i_B : in std_logic_vector(31 downto 0);
+       o_Q : out std_logic);
+
+end Compare;
+
+architecture structure of Compare is
+begin
+process (i_A, i_B)
+begin
+	if (i_A = i_B) then
+		o_Q <= '1';
+	else
+		o_Q <= '0';
+	end if;
+end process;
+ 
+end structure;

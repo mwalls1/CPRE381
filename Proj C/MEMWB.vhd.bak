@@ -1,0 +1,53 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity MEMWB is
+  port(i_CLK        : in std_logic;-- Clock input
+       iRst         : in std_logic;
+       iWrEn        : in std_logic;	-- Write enable input
+       iMemToReg    : in std_logic;
+       iRegWrite    : in std_logic;
+       iSelLui	    : in std_logic;
+       iDMemOut     : in std_logic_vector(31 downto 0);
+       iDMemAddr    : in std_logic_vector(31 downto 0);
+       iRealRd      : in std_logic_vector(4 downto 0);
+       iIm          : in std_logic_vector(15 downto 0);
+       oMemToReg    : out std_logic;
+       oRegWrite    : out std_logic;
+       oSelLui	    : out std_logic;
+       oDMemOut     : out std_logic_vector(31 downto 0);
+       oDMemAddr    : out std_logic_vector(31 downto 0);
+       oIm          : out std_logic_vector(15 downto 0);
+       oRealRd      : out std_logic_vector(4 downto 0));
+end MEMWB;
+
+architecture structure of MEMWB is
+component dflipflop
+    port(i_CLK      : in std_logic;     -- Clock input
+       i_RST        : in std_logic;     -- Reset input
+       i_WE         : in std_logic;     -- Write enable input
+       i_D          : in std_logic;     -- Data value input
+       o_Q          : out std_logic);   -- Data value output
+  end component;
+signal iD, oQ : std_logic_vector(87 downto 0);
+begin
+
+iD <= iMemToReg & iRegWrite & iSelLui & iDMemOut & iDMemAddr & iRealRd;
+
+G1: for i in 0 to 87 generate
+g_DFF1: dflipflop
+	port MAP(i_CLK    => i_CLK,
+            	 i_RST    => iRst,
+            	 i_WE     => iWrEn,
+            	 i_D      => iD(i),
+            	 o_Q      => oQ(i));
+end generate;
+oIM <= oQ(87 downto 72);
+oMemToReg <= oQ(71);
+oRegWrite <= oQ(70);
+oSelLui <= oQ(69);
+oDMemOut <= oQ(68 downto 37);
+oDMemAddr <= oQ(36 downto 5);
+oRealRd <= oQ(4 downto 0);
+
+end structure;

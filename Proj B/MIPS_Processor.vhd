@@ -1,0 +1,245 @@
+-------------------------------------------------------------------------
+-- Henry Duwe
+-- Department of Electrical and Computer Engineering
+-- Iowa State University
+-------------------------------------------------------------------------
+
+
+-- MIPS_Processor.vhd
+-------------------------------------------------------------------------
+-- DESCRIPTION: This file contains a skeleton of a MIPS_Processor  
+-- implementation.
+
+-- 01/29/2019 by H3::Design created.
+-------------------------------------------------------------------------
+
+
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+
+entity MIPS_Processor is
+  generic(N : integer := 32);
+  port(iCLK            : in std_logic;
+       iRST            : in std_logic;
+       iInstLd         : in std_logic;
+       iInstAddr       : in std_logic_vector(N-1 downto 0);
+       iInstExt        : in std_logic_vector(N-1 downto 0);
+       oALUOut         : out std_logic_vector(N-1 downto 0)); -- TODO: Hook this up to the output of the ALU. It is important for synthesis that you have this output that can effectively be impacted by all other components so they are not optimized away.
+
+end  MIPS_Processor;
+
+
+architecture structure of MIPS_Processor is
+
+  -- Required data memory signals
+  signal s_DMemWr       : std_logic; -- TODO: use this signal as the final active high data memory write enable signal
+  signal s_DMemAddr     : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the final data memory address input
+  signal s_DMemData     : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the final data memory data input
+  signal s_DMemOut      : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the data memory output
+ 
+  -- Required register file signals 
+  signal s_RegWr        : std_logic; -- TODO: use this signal as the final active high write enable input to the register file
+  signal s_RegWrAddr    : std_logic_vector(4 downto 0); -- TODO: use this signal as the final destination register address input
+  signal s_RegWrData    : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the final data memory data input
+
+  -- Required instruction memory signals
+  signal s_IMemAddr     : std_logic_vector(N-1 downto 0); -- Do not assign this signal, assign to s_NextInstAddr instead
+  signal s_NextInstAddr : std_logic_vector(N-1 downto 0); -- TODO: use this signal as your intended final instruction memory address input.
+  signal s_Inst         : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the instruction signal 
+
+  -- Required halt signal -- for simulation
+  signal v0             : std_logic_vector(N-1 downto 0); -- TODO: should be assigned to the output of register 2, used to implement the halt SYSCALL
+  signal s_Halt         : std_logic;  -- TODO: this signal indicates to the simulation that intended program execution has completed. This case happens when the syscall instruction is observed and the V0 register is at 0x0000000A. This signal is active high and should only be asserted after the last register and memory writes before the syscall are guaranteed to be completed.
+
+  component mem is
+    generic(ADDR_WIDTH : integer;
+            DATA_WIDTH : integer);
+    port(
+          clk          : in std_logic;
+          addr         : in std_logic_vector((ADDR_WIDTH-1) downto 0);
+          data         : in std_logic_vector((DATA_WIDTH-1) downto 0);
+          we           : in std_logic := '1';
+          q            : out std_logic_vector((DATA_WIDTH -1) downto 0));
+    end component;
+
+  -- TODO: You may add any additional signals or components your implementation 
+  --       requires below this comment
+  
+  component register_file
+port(i_CLK          : in std_logic;     -- Clock input
+     i_Res	    : in std_logic;   -- Reset
+     i_We           : in std_logic_vector(4 downto 0);	-- Write address input
+     i_Re1          : in std_logic_vector(4 downto 0);  --Read enable input
+     i_Re2          : in std_logic_vector(4 downto 0);	--Read enable input
+     i_D            : in std_logic_vector(31 downto 0);	-- Data value input
+     i_WrEn	    : in std_logic;
+     out1           : out std_logic_vector(31 downto 0);   -- Data value output   
+     out2           : out std_logic_vector(31 downto 0));   -- Data value output
+  end component;
+component ALUSHIFT
+  port(i_A : in std_logic_vector(31 downto 0);
+	i_B : in std_logic_vector(31 downto 0);
+	i_Im : in std_logic_vector(31 downto 0);
+	i_Binv : in std_logic;
+	ALUsrc : in std_logic;
+	i_Op : in std_logic_vector(5 downto 0);
+	i_Shift : in std_logic_vector(4 downto 0);
+	o_Out : out std_logic_vector(31 downto 0);
+        o_Zero : out std_logic);				    
+end component;
+
+
+component mux
+port(i_s	    : in std_logic;
+       i_A          : in std_logic_vector(31 downto 0);
+       i_B	    : in std_logic_vector(31 downto 0);
+       o_y         : out std_logic_vector(31 downto 0));
+end component;
+component signExtend
+port(i_A : in std_logic_vector(15 downto 0);
+     i_Sel : in std_logic;
+     o_Out : out std_logic_vector(31 downto  0));
+end component;
+
+component PC is
+  port(i_CLK        : in std_logic;     -- Clock input
+       i_RST        : in std_logic;     -- Reset input
+       i_WE         : in std_logic;     -- Write enable input
+       i_D          : in std_logic_vector(31 downto 0);     -- Data value input
+       o_Q          : out std_logic_vector(31 downto 0));   -- Data value output
+end component;
+
+component full_adder is
+port(i_A          : in std_logic_vector(31 downto 0);
+       i_B          : in std_logic_vector(31 downto 0);
+       o_S          : out std_logic_vector(31 downto 0);
+       i_C          : in std_logic;
+       o_C          : out std_logic);
+
+end component;
+
+component mux5bit is
+generic(N : integer := 5);
+  port(sel	    : in std_logic;
+       i_A          : in std_logic_vector(N-1 downto 0);
+       i_B	    : in std_logic_vector(N-1 downto 0);
+       o_F          : out std_logic_vector(N-1 downto 0));
+
+end component;
+
+component controlModule is
+  port(opCode       : in std_logic_vector(5 downto 0);
+       functCode    : in std_logic_vector(5 downto 0);
+       RegDst       : out std_logic;
+       MemToReg	    : out std_logic;
+       ALUOp	    : out std_logic_vector(5 downto 0);
+       MemWrite     : out std_logic;
+       ALUSrc       : out std_logic;
+       RegWrite     : out std_logic;
+       BInvert      : out std_logic;
+       SelExt		: out std_logic;
+       SelLui		: out std_logic;
+       SelShift         : out std_logic);
+
+end component;
+
+signal s_Sum, s_A1, s_A2, s_Q, s_Mux, s_Im, s_PC, s_PCNEW : std_logic_vector(31 downto 0);
+signal s_Zero, s_RegDst, s_MemToReg, s_MemWrite, s_ALUSrc, s_RegWrite, s_BInvert, s_SelExt, s_SelLui, s_ShiftVar : std_logic;
+signal s_ALUOp : std_logic_vector(5 downto 0);
+signal s_ShiftAm : std_logic_vector(4 downto 0);
+
+begin
+
+  -- TODO: This is required to be your final input to your instruction memory. This provides a feasible method to externally load the memory module which means that the synthesis tool must assume it knows nothing about the values stored in the instruction memory. If this is not included, much, if not all of the design is optimized out because the synthesis tool will believe the memory to be all zeros.
+  with iInstLd select
+    s_IMemAddr <= s_NextInstAddr when '0',
+      iInstAddr when others;
+
+
+  IMem: mem
+    generic map(ADDR_WIDTH => 10,
+                DATA_WIDTH => N)
+    port map(clk  => iCLK,
+             addr => s_IMemAddr(11 downto 2),
+             data => iInstExt,
+             we   => iInstLd,
+             q    => s_Inst);
+  
+  DMem: mem
+    generic map(ADDR_WIDTH => 10,
+                DATA_WIDTH => N)
+    port map(clk  => iCLK,
+             addr => s_DMemAddr(11 downto 2),
+             data => s_DMemData,
+             we   => s_DMemWr,
+             q    => s_DMemOut);
+
+  s_Halt <='1' when (s_Inst(31 downto 26) = "000000") and (s_Inst(5 downto 0) = "001100") and (v0 = "00000000000000000000000000001010") else '0';
+
+  -- TODO: Implement the rest of your processor below this comment! 
+  g_PC: PC
+	port map(i_CLK => iCLK,
+		 i_RST => iRST,
+		 i_WE => '1',
+		 i_D => s_PCNEW,
+		 o_Q => s_NextInstAddr);
+ adder: full_adder
+	port map(i_A => s_NextInstAddr,
+		 i_B => x"00000004",
+		 o_S => s_PCNEW,
+		 i_C => '0',
+		 o_C => open);
+control: controlModule
+	port map(opCode => s_Inst(31 downto 26),
+		 functCode => s_Inst(5 downto 0),
+		 RegDst => s_RegDst,
+		 MemToReg => s_MemToReg,
+		 ALUOp => s_ALUOp,
+		 MemWrite => s_DMemWr,
+		 ALUSrc => s_ALUSrc,
+		 RegWrite => s_RegWr,
+		 BInvert => s_BInvert,
+		 SelExt => s_SelExt,
+		 SelLui => s_SelLui,
+		 SelShift => s_ShiftVar);
+reg: register_file
+	port map(i_CLK => iCLK,
+     		i_Res => iRST,	    
+     		i_We  => s_RegWrAddr,   
+     		i_Re1  => s_Inst(25 downto 21),    
+     		i_Re2   => s_Inst(20 downto 16),   
+     		i_D      => s_RegWrData,  
+     		i_WrEn	 =>  s_RegWr,
+     		out1     => s_A1,
+   		out2 => s_DMemData);
+mux1: mux5bit
+	port map(sel => s_RegDst,
+		 i_A => s_Inst(20 downto 16),
+		 i_B => s_Inst(15 downto 11),
+		 o_F => s_RegWrAddr);
+extender: signExtend
+	port map(i_A => s_Inst(15 downto 0),
+    		 i_Sel => s_SelExt,
+    		 o_Out => s_Im);
+mux2: mux5bit
+	port map(sel => s_ShiftVar,
+		 i_A => s_Inst(10 downto 6),
+		 i_B => s_DmemData(4 downto 0),
+		 o_F => s_ShiftAm);
+alu: ALUSHIFT
+	port map(i_A => s_A1,
+		i_B => s_DmemData,
+		i_Im => s_Im,
+		i_Binv => s_BInvert,
+		ALUsrc => s_ALUSrc,
+		i_Op => s_ALUOp,
+		i_Shift => s_ShiftAm,
+		o_Out => s_DMemAddr,
+       		o_Zero => s_Zero);
+muxAluMem: mux
+	port map(i_s => s_MemToReg,
+      		 i_A => s_DMemAddr,
+       		 i_B => s_DmemOut,
+       		 o_y => s_RegWrData);
+end structure;

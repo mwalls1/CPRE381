@@ -1,0 +1,72 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity alushift is
+  port(i_A : in std_logic_vector(31 downto 0);
+	i_B : in std_logic_vector(31 downto 0);
+	i_Im : in std_logic_vector(31 downto 0);
+	i_Binv : in std_logic;
+	ALUsrc : in std_logic;
+	i_Op : in std_logic_vector(5 downto 0);
+	i_Shift : in std_logic_vector(4 downto 0);
+	o_Out : out std_logic_vector(31 downto 0);
+        o_Zero : out std_logic);				    
+
+end alushift;
+
+architecture structure of alushift is
+component ALU32
+port(i_A          : in std_logic_vector(31 downto 0);
+       i_B	    : in std_logic_vector(31 downto 0);
+       i_Cin        : in std_logic;
+       i_Binv	    : in std_logic;
+       i_Op	    : in std_logic_vector(2 downto 0);
+       o_Result     : out std_logic_vector(31 downto 0);
+       o_Overflow   : out std_logic;
+       o_Zero       : out std_logic);
+end component;
+component BarrellShifter
+port(i_In      : in std_logic_vector(31 downto 0);
+       i_Shift : in std_logic_vector(4 downto 0);
+       i_Sel   : in std_logic_vector(1 downto 0);
+       o_Out   : out std_logic_vector(31 downto 0));
+end component;
+component mux is
+port(i_A    : in std_logic_vector(31 downto 0);
+       i_B  : in std_logic_vector(31 downto 0);
+       i_s  : in std_logic;
+       o_y  : out std_logic_vector(31 downto 0));
+end component;
+signal s_AddSub, s_Res1, s_Res2 : std_logic_vector(31 downto 0);
+signal s_Over : std_logic;
+begin
+g_Mux1: mux
+   port MAP(i_A => i_B,
+		i_B => i_Im,
+		i_s => ALUsrc,
+		o_Y => s_AddSub);
+
+g_ALU32: ALU32
+   port MAP(i_A => i_A,
+	    i_B => s_AddSub, 
+	    i_Cin => i_Binv, 
+	    i_Binv => i_Binv,  
+	    i_Op => i_Op(2 downto 0), 
+	    o_Result => s_Res1, 
+	    o_Overflow => s_Over,
+            o_Zero     => o_Zero);
+
+g_BarrellShifter : BarrellShifter
+   port MAP(i_In => i_A,
+		i_Shift => i_Shift,
+		i_Sel => i_Op(4 downto 3),
+		o_Out => s_Res2);
+
+g_Mux: mux
+   port MAP(i_A => s_Res1,
+		i_B => s_Res2,
+		i_s => i_Op(5),
+		o_Y => o_Out);
+
+		
+end structure;

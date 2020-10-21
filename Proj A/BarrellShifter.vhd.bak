@@ -1,0 +1,79 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+	
+entity BarrellShifter is
+port(i_In      : in std_logic_vector(31 downto 0);
+       i_Shift : in std_logic_vector(4 downto 0);
+       i_Sel   : in std_logic_vector(1 downto 0);
+       o_Out   : out std_logic_vector(31 downto 0));
+end BarrellShifter;
+
+
+architecture structure of BarrellShifter is
+
+component mux is
+port(i_A    : in std_logic_vector(31 downto 0);
+       i_B  : in std_logic_vector(31 downto 0);
+       i_s  : in std_logic;
+       o_y  : out std_logic_vector(31 downto 0));
+end component;
+
+signal mout_1, mout_2, mout_3, mout_4 : std_logic_vector(31 downto 0);
+signal temp1, temp2, temp3, temp4, temp5, temp6 : std_logic_vector(31 downto 0);
+
+begin
+
+process (i_In, i_Shift, i_Sel, mout_1, mout_2, mout_3, mout_4, temp1, temp2, temp3, temp4, temp5, temp6)
+begin
+	case i_Sel is 
+	   when "00" =>
+		temp1 <= i_In(30 downto 0) & '0';
+		temp2 <= mout_1(29 downto 0) & "00";
+		temp3 <= mout_2(27 downto 0) & "0000";
+		temp4 <= mout_3(23 downto 0) & "00000000";
+		temp5 <= mout_4(15 downto 0) & "0000000000000000";
+	   when "01" =>
+		temp1 <= '0' & i_In(31 downto 1);
+		temp2 <= "00" & mout_1(31 downto 2);
+		temp3 <= "0000" & mout_2(31 downto 4);
+		temp4 <= "00000000" & mout_3(31 downto 8);
+		temp5 <= "0000000000000000" & mout_4(31 downto 16);
+	   when "10" =>
+		temp1 <= i_In(31) & i_In(31 downto 1);
+		temp2 <= i_In(31) & i_In(31) & mout_1(31 downto 2);
+		temp3 <= i_In(31) & i_In(31) & i_In(31) & i_In(31) & mout_2(31 downto 4);
+		temp4 <= i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & mout_3(31 downto 8);
+		temp5 <= i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & i_In(31) & mout_4(31 downto 16);
+	   when others =>  temp1 <= open;
+	end case;
+end process;
+
+
+g_mux_1: mux
+   port MAP(i_A    => i_In,        
+	      i_B  => temp1,
+              i_s  => i_Shift(0),
+              o_y  => mout_1);  
+g_mux_2: mux
+   port MAP(i_A    => mout_1,        
+	      i_B  => temp2,
+              i_s  => i_Shift(1),
+              o_y  => mout_2);  
+g_mux_3: mux
+   port MAP(i_A    => mout_2,        
+	      i_B  => temp3,
+              i_s  => i_Shift(2),
+              o_y  => mout_3);  
+g_mux_4: mux
+   port MAP(i_A    => mout_3,        
+	      i_B  => temp4,
+              i_s  => i_Shift(3),
+              o_y  => mout_4); 
+g_mux_5: mux
+   port MAP(i_A    => mout_4,        
+	      i_B  => temp5,
+              i_s  => i_Shift(4),
+              o_y  => o_Out); 
+
+
+end structure;

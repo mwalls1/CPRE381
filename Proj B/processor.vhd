@@ -1,0 +1,134 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity processor is
+  port(i_CLK        : in std_logic;     -- Clock input
+       i_Res        : in std_logic;	-- Reset input
+       i_WrEn       : in std_logic;     -- Global write enable
+       i_WrEnMem    : in std_logic; --Memory write enable
+       i_MuxSel     : in std_logic; --Mux Selecter
+       i_WeReg      : in std_logic_vector(4 downto 0);-- Write address input
+       i_Re1        : in std_logic_vector(4 downto 0);--Read Address input
+       i_Re2        : in std_logic_vector(4 downto 0);--Read Address input
+       i_Im         : in std_logic_vector(15 downto 0);--Immediate input
+       i_Add_Sub    : in std_logic;
+       i_ALUSRc	    : in std_logic;
+       i_SelSign    : in std_logic;
+       i_Op	    : in std_logic_vector(5 downto 0);
+       i_Shift	    : in std_logic_vector(4 downto 0));					    
+
+end processor;
+
+architecture structure of processor is
+component register_file
+port(i_CLK          : in std_logic;     -- Clock input
+     i_Res	    : in std_logic;   -- Reset
+     i_We           : in std_logic_vector(4 downto 0);	-- Write enable input
+     i_Re1          : in std_logic_vector(4 downto 0);  --Read enable input
+     i_Re2          : in std_logic_vector(4 downto 0);	--Read enable input
+     i_D            : in std_logic_vector(31 downto 0);	-- Data value input
+     i_WrEn	    : in std_logic;
+     out1           : out std_logic_vector(31 downto 0);   -- Data value output   
+     out2           : out std_logic_vector(31 downto 0));   -- Data value output
+  end component;
+component ALUSHIFT
+  port(i_A : in std_logic_vector(31 downto 0);
+	i_B : in std_logic_vector(31 downto 0);
+	i_Im : in std_logic_vector(31 downto 0);
+	i_Binv : in std_logic;
+	ALUsrc : in std_logic;
+	i_Op : in std_logic_vector(5 downto 0);
+	i_Shift : in std_logic_vector(4 downto 0);
+	o_Out : out std_logic_vector(31 downto 0);
+        o_Zero : out std_logic);				    
+end component;
+component mem
+port(clk        : in std_logic;
+     addr	: in std_logic_vector((9) downto 0);
+     data	: in std_logic_vector((31) downto 0);
+     we		: in std_logic := '1';
+     q		: out std_logic_vector((31) downto 0));
+end component;
+component mux
+port(i_s	    : in std_logic;
+       i_A          : in std_logic_vector(31 downto 0);
+       i_B	    : in std_logic_vector(31 downto 0);
+       o_y         : out std_logic_vector(31 downto 0));
+end component;
+component signExtend
+port(i_A : in std_logic_vector(15 downto 0);
+     i_Sel : in std_logic;
+     o_Out : out std_logic_vector(31 downto  0));
+end component;
+
+component PC is
+  port(i_CLK        : in std_logic;     -- Clock input
+       i_RST        : in std_logic;     -- Reset input
+       i_WE         : in std_logic;     -- Write enable input
+       i_D          : in std_logic_vector(31 downto 0);     -- Data value input
+       o_Q          : out std_logic_vector(31 downto 0));   -- Data value output
+end component;
+
+component full_adder is
+port(i_A          : in std_logic_vector(31 downto 0);
+       i_B          : in std_logic_vector(31 downto 0);
+       o_S          : out std_logic_vector(31 downto 0);
+       i_C          : in std_logic;
+       o_C          : out std_logic);
+
+end component;
+
+signal s_Sum, s_A1, s_A2, s_Q, s_Mux, s_Im, s_PC, s_PCNEW : std_logic_vector(31 downto 0);
+signal s_Zero : std_logic;
+
+begin
+g_s1 : signExtend
+	port Map(i_A => i_Im,
+		 i_Sel => i_SelSign,
+		 o_Out => s_Im);
+g_r1 : register_file
+	port MAP(i_CLK => i_CLK,
+		i_Res => i_Res,
+		i_We => i_WeReg,
+		i_Re1 => i_Re1,
+		i_Re2 => i_Re2,
+		i_D => s_Mux,
+		i_WrEn => i_WrEn,
+		out1 => s_A1,
+		out2 => s_A2);
+g_add1 : ALUSHIFT
+	port MAP(i_Binv => i_Add_Sub,
+		ALUsrc => i_ALUSRc,
+		i_A => s_A1,
+		i_B => s_A2,
+		i_Im => s_Im,
+	        i_Op => i_Op,
+		i_Shift => i_Shift,
+		o_Out => s_Sum,
+                o_Zero => s_Zero);
+g1_mux1 : mux
+	port MAP(i_s => i_MuxSel,
+		 i_A => s_Sum,
+		 i_B => s_Q,
+		 o_y => s_Mux);
+g1_mem1 : mem
+	port MAP(clk => i_CLK,
+		 addr => s_Sum(11 downto 2),
+	         data => s_A2,
+	         we => i_WrEnMem,
+		 q => s_Q);
+
+g_PC : PC
+	port MAP(i_CLK => i_CLK,
+		 i_RST => i_Res,
+                 i_WE => '1',
+		 i_D => s_PCNEW,
+                 o_Q => s_PC);
+
+g_full_adder : full_adder
+	port MAP(i_A => s_PC,
+                 i_B => x"00000004",
+                 o_S => s_PCNEW,
+                 i_C => '0',
+                 o_C => open); 
+end structure;

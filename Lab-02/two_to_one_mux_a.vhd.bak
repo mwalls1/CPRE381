@@ -1,0 +1,87 @@
+-------------------------------------------------------------------------
+-- Joseph Zambreno
+-- Department of Electrical and Computer Engineering
+-- Iowa State University
+-------------------------------------------------------------------------
+
+
+-- Quadratic.vhd
+-------------------------------------------------------------------------
+-- DESCRIPTION: This file contains an implementation of the Quadratic
+-- equation Ax^2+Bx+C using invidual adder and multiplier units.
+--
+--
+-- NOTES:
+-- 8/19/16 by JAZ::Design created.
+-------------------------------------------------------------------------
+
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+
+entity two_to_one_mux_a is
+
+  port(sel             		    : in std_logic;
+       iA 		            : in std_logic;
+       iB 		            : in std_logic;
+       oY 		            : out std_logic);
+
+end two_to_one_mux_a;
+
+architecture structure of two_to_one_mux_a is
+  
+  -- Describe the component entities as defined in Adder.vhd 
+  -- and Multiplier.vhd (not strictly necessary).
+  component org2
+    port(i_A           : in std_logic;
+         i_B             : in std_logic;
+         o_F             : out std_logic);
+  end component;
+
+  component andg2
+    port(i_A           : in std_logic;
+         i_B             : in std_logic;
+         o_F             : out std_logic);
+  end component;
+
+component invg
+    port(i_A           : in std_logic;
+         o_F             : out std_logic);
+  end component;
+
+  -- Signals to store !Sel
+  signal sVALUE_A : std_logic;
+  -- Signal to store sel and iB
+  signal sVALUE_B : std_logic;
+  -- Signal to store sigA and iA
+  signal sVALUE_C   : std_logic;
+
+begin
+
+  
+  ---------------------------------------------------------------------------
+  -- Level 1: !sel and Sel and B
+  ---------------------------------------------------------------------------
+  g_And1: andg2
+    port MAP(iA               => sel,
+             iB               => iB,
+             oC               => sVALUE_B);
+
+  g_Not1: invg
+    port MAP(iA               => sel,
+             oC               => sVALUE_A);
+    
+ ---------------------------------------------------------------------------
+  -- Level 2: Calculate A*x*x, B*x+C
+  ---------------------------------------------------------------------------
+  g_And2: andg2
+    port MAP(iA               => sVALUE_A,
+             iB               => iA,
+             oC               => sVALUE_C);
+
+  g_Or1: org2
+    port MAP(iA               => sVALUE_B,
+             iB               => sVALUE_C,
+             oC               => oY);
+  
+end structure;

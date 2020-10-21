@@ -1,0 +1,73 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use work.invg;
+use work.andg2;
+use work.org2;
+	
+entity mux is
+port(i_A          : in std_logic_vector(31 downto 0);
+       i_B          : in std_logic_vector(31 downto 0);
+       i_s          : in std_logic;
+       o_y          : out std_logic_vector(31 downto 0));
+end mux;
+
+architecture structure of mux is
+
+component invg
+  port(i_A  : in std_logic;
+       o_F  : out std_logic);
+end component;
+
+component andg2
+  port(i_A  : in std_logic;
+       i_B  : in std_logic;
+       o_F  : out std_logic);
+end component;
+
+component org2
+  port(i_A  : in std_logic;
+       i_B  : in std_logic;
+       o_F  : out std_logic);
+end component;
+
+signal sVALUE_inv : std_logic;
+
+signal sVALUE_and_1 : std_logic_vector (31 downto 0);
+signal sVALUE_and_2 : std_logic_vector (31 downto 0);
+
+begin
+
+-- We loop through and instantiate and connect N andg2, and org2 modules
+G1: for i in 0 to 31 generate
+	g_invg: invg
+	   port MAP(i_A => i_s,
+		    	o_F => sVALUE_inv);
+	
+	g_andg2_1: andg2
+	   port MAP(i_A => i_A(i),
+		    	i_B => i_s,
+	            	o_F => sVALUE_and_1(i));
+	
+	g_andg2_2: andg2
+	   port MAP(i_A => sVALUE_inv,
+		    	i_B => i_B(i),
+	            	o_F => sVALUE_and_2(i));
+	
+	g_org2: org2
+	   port MAP(i_A => sVALUE_and_1(i),
+		    	i_B => sVALUE_and_2(i),
+                    	o_F => o_y(i));
+end generate;
+
+  
+end structure;
+
+architecture dataflow of mux is
+
+begin
+
+	G2: for i in 0 to 31 generate
+	    o_y(i) <= (i_B(i) and(not i_s)) or (i_A(i) and i_s);
+	end generate;
+
+end dataflow;
